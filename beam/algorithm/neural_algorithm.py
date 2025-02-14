@@ -803,7 +803,7 @@ class NeuralAlgorithm(Algorithm):
             self.epoch_length['train'] = math.ceil(self.epoch_length['train'] / self.batch_size_train)
 
         if self.n_epochs is None:
-            self.n_epochs = self.get_hparam('total_steps') // self.epoch_length['train']
+            self._n_epochs = self.get_hparam('total_steps') // self.epoch_length['train']
 
         self.set_hparam('epoch_length_train', self.epoch_length['train'])
         self.set_hparam('epoch_length_eval', self.epoch_length[self.eval_subset])

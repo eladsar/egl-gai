@@ -2,24 +2,25 @@ from beam import NeuralAlgorithm
 from .model import FiLMUNet
 from torch import nn
 import torch
+import math
 
 
 class ExplicitGradientGenerativeAlgorithm(NeuralAlgorithm):
 
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, hparams, *args, **kwargs):
 
-        net = FiLMUNet()
-        super().__init__(*args, networks=net, **kwargs)
+        net = FiLMUNet(hparams)
+        super().__init__(hparams, *args, networks=net, **kwargs)
         self.loss = nn.MSELoss()
 
-    def sample_eps(self, b):
+    def sample_eps(self, b, device=None):
         # Define the range in log-space
-        log_min = torch.log(torch.tensor(self.hparams.eps_min))
-        log_max = torch.log(torch.tensor(self.hparams.eps_max))
+        log_min = math.log(self.hparams.eps_min)
+        log_max = math.log(self.hparams.eps_max)
 
         # Sample uniformly in log-space
-        log_sample = torch.rand(b) * (log_max - log_min) + log_min
+        log_sample = torch.rand(b, device=device) * (log_max - log_min) + log_min
 
         # Convert back to linear scale
         sample = torch.e ** log_sample
@@ -33,17 +34,21 @@ class ExplicitGradientGenerativeAlgorithm(NeuralAlgorithm):
         y = sample['y']
         b = len(x)
 
-        eps_vals = self.sample_eps(b).unsqueeze(1).view(-1, self.hparams.context_dim)
-        eps = torch.randn(*x.shape) * eps_vals.view(-1, 1, 1, 1)
+        eps = self.sample_eps(b, device=x.device)
+        noise = torch.randn(*x.shape, device=x.device)
 
-        x_perturbed = x - eps
-        g_x_perturbed = net(x_perturbed, eps)
+        eps_context = eps.unsqueeze(1).expand(-1, self.hparams.context_dim)
+        eps_image = eps.view(-1, 1, 1, 1)
+        x_perturbed = x * (1 - eps_image) + eps_image * noise
+        g_x_perturbed = net(x_perturbed, eps_context)
 
         y = torch.ones(b, device=x.device)
-        y_perturbed = 1 - torch.clamp_max(sample / torch.abs(x).mean(dim=(1, 2, 3)), 1)
+        y_perturbed = 1 - eps
 
-        # residual = y - y_perturbed - (g_x_perturbed * eps).sum(dim=1)
-        loss = self.loss((g_x_perturbed * eps).sum(dim=1), y - y_perturbed)
+        diff = x - x_perturbed
+
+        # y_perturbed = y + g_x_perturbed * diff + residual
+        loss = self.loss((g_x_perturbed * diff).sum(dim=(1, 2, 3)), y - y_perturbed)
         self.apply(loss)
 
 

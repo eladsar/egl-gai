@@ -31,11 +31,10 @@ class UniversalDataset(torch.utils.data.Dataset, BeamBase):
         @param kwargs:
         """
         torch.utils.data.Dataset.__init__(self)
-        BeamBase.__init__(self, hparams=hparams, device=device, target_device=target_device, to_torch=to_torch,
-                          index_mapping=index_mapping, preprocess=preprocess)
+        BeamBase.__init__(self, *args, hparams=hparams, device=device, target_device=target_device, to_torch=to_torch,
+                          index_mapping=index_mapping, preprocess=preprocess, **kwargs)
 
         device = beam_device(self.hparams.device)
-        target_device = beam_device(self.hparams.target_device)
 
         self.index = None
         self.set_index(index, mapping=index_mapping)
@@ -52,7 +51,7 @@ class UniversalDataset(torch.utils.data.Dataset, BeamBase):
         self.training = False
         self.preprocess = self.hparams.preprocess
         self.statistics = None
-        self._target_device = self.hparams.target_device
+        self._target_device = beam_device(self.hparams.target_device)
         self.to_torch = self.hparams.to_torch
 
         if len(args) >= 1 and isinstance(args[0], argparse.Namespace):

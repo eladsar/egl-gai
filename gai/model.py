@@ -53,6 +53,7 @@ class FiLMUNet(nn.Module):
 
         # Decode the modified feature maps
         output_image = self.unet.decoder(*encoder_features)
+        output_image = self.unet.segmentation_head(output_image)
 
         return output_image
 

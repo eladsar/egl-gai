@@ -12,12 +12,16 @@ from kornia.augmentation.container import AugmentationSequential
 
 class CIFAR10Dataset(UniversalDataset):
 
-    def __init__(self, hparams):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        path = resource(hparams.data_path)
-        device = beam_device(hparams.device)
-        padding = hparams.padding
+        path = resource(self.hparams.data_path)
+        if self.hparams.cpu_workers > 1:
+            device = 'cpu'
+            # 'target_device': 'cpu',
+        else:
+            device = beam_device(self.hparams.device)
+        padding = self.hparams.get('random-crop-augmentation-padding')
 
         self.augmentations = AugmentationSequential(kornia.augmentation.RandomHorizontalFlip(),
                                                     kornia.augmentation.RandomCrop((32, 32), padding=padding,
@@ -49,7 +53,7 @@ class CIFAR10Dataset(UniversalDataset):
 
         self.data = BeamData.simple({'train': x_train, 'test': x_test}, label={'train': y_train, 'test': y_test})
         self.labels = self.data.label
-        self.split(validation=.2, test=self.data['test'].index, seed=hparams.split_dataset_seed)
+        self.split(validation=.2, test=self.data['test'].index, seed=self.hparams.split_dataset_seed)
         
     def getitem(self, ind):
 
