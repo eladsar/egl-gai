@@ -5,11 +5,12 @@ from beam.config import NNExperimentConfig, BeamParam
 class EGLExperimentConfig(NNExperimentConfig):
 
     defaults = {
-        'n_epochs': 100,
+        'n_epochs': 200,
         'project_name': 'egl',
         'algorithm': 'ExplicitGradientGenerativeAlgorithm',
         'target_device': 'cpu',
         'cpu_workers': 4,
+        'optimization_mode': 'min',
     }
 
     parameters = [
