@@ -61,7 +61,8 @@ class CIFAR10Dataset(UniversalDataset):
         x = data.data
         labels = data.label
 
-        x = x.half() / 255
+        # x = x.half() / 255
+        x = x / 255
 
         if self.training:
             x = self.augmentations(x)
